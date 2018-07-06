@@ -1,7 +1,15 @@
 -- psql -U dev -d noteful -f ./db/noteful.sql
 
+DROP TABLE IF EXISTS notes_tags;
 DROP TABLE IF EXISTS notes;
 DROP TABLE IF EXISTS folders;
+DROP TABLE IF EXISTS tags;
+
+
+CREATE TABLE tags (
+  id serial PRIMARY KEY,
+  name text NOT NULL UNIQUE
+);
 
 CREATE TABLE folders (
     id serial PRIMARY KEY,
@@ -13,15 +21,20 @@ CREATE TABLE notes (
   id serial PRIMARY KEY,
   title text NOT NULL,
   content text,
-  created timestamp DEFAULT now()
-  -- folder_id int REFERENCES folders(id) ON DELETE SET NULL;
+  created timestamp DEFAULT now(),
+  folder_id int REFERENCES folders(id) ON DELETE SET NULL
+);
+
+CREATE TABLE notes_tags (
+  note_id INTEGER NOT NULL REFERENCES notes ON DELETE CASCADE,
+  tag_id INTEGER NOT NULL REFERENCES tags ON DELETE CASCADE
 );
 
 ALTER SEQUENCE notes_id_seq RESTART WITH 1000;
 
 -- If you delete a folder then set folder_id to null on related notes
 -- IOW, delete a folder and move the notes to "uncategorized"
-ALTER TABLE notes ADD COLUMN folder_id int REFERENCES folders(id) ON DELETE SET NULL;
+-- ALTER TABLE notes ADD COLUMN folder_id int REFERENCES folders(id) ON DELETE SET NULL;
 
 -- Prevent folders from being deleted if are referenced by any note
 -- IOW, only empty folder can be deleted
@@ -36,6 +49,12 @@ INSERT INTO folders (name) VALUES
   ('Drafts'),
   ('Personal'),
   ('Work');
+
+INSERT INTO tags (name) VALUES
+  ('tag1'),
+  ('tag2'),
+  ('tag3'),
+  ('tag4');
 
 INSERT INTO notes (title, content, folder_id) VALUES
   (
@@ -89,7 +108,12 @@ INSERT INTO notes (title, content, folder_id) VALUES
   , NULL
   );
 
--- -- get all notes
+INSERT INTO notes_tags (note_id, tag_id) VALUES
+(1001, 2),
+(1000, 3),
+(1005, 1),
+(1009, 1);
+-- get all notes
 -- SELECT * FROM notes;
 
 -- -- get all folders
@@ -102,3 +126,11 @@ INSERT INTO notes (title, content, folder_id) VALUES
 -- -- get all notes, show folders if they exists otherwise null
 -- SELECT folder_id as folderId FROM notes
 -- LEFT JOIN folders ON notes.folder_id = folders.id;
+
+SELECT title, tags.name, folders.name FROM notes 
+--this tags.name is referenced
+--through the junction table of the combo key and and the folders.name is referenced 
+--through the notes table b/c of many-to-many
+LEFT JOIN folders ON notes.folder_id = folders.id
+LEFT JOIN notes_tags ON notes.id = notes_tags.note_id
+LEFT JOIN tags ON notes_tags.tag_id = tags.id;

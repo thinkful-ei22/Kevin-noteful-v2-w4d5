@@ -3,7 +3,7 @@
 module.exports = {
   development: {
     client: 'pg',
-    connection: process.env.DATABASE_URL || 'postgres://localhost/noteful',
+    connection: process.env.DATABASE_URL || 'postgres://dev:dev@localhost:5432/noteful-app',
     debug: true, // http://knexjs.org/#Installation-debug
     pool: { min: 1, max: 2 }
   },
